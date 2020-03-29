@@ -1,0 +1,11 @@
+version: '3.4'
+services:
+  flask:
+    build: .
+    container_name: "flask-covid"
+    ports:
+      - 5000:5000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=flask"
+      - "traefik.frontend.rule=${TRAEFIK_FRONTEND_RULE}"
