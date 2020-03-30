@@ -27,17 +27,36 @@ def download_file(url,myauth, dataFolder):
 
 class Ecdc(Resource):
     def get(self):
-        today= pendulum.yesterday()
+        today= pendulum.today()
         todaystr=today.format("YYYY-MM-DD")
 
         root = Path.cwd()
 
         Path.mkdir(root / 'data', exist_ok=True)
         dataFolder = root / 'data'
-        file = dataFolder / Path("COVID-19-geographic-disbtribution-worldwide-" + todaystr + ".xlsx")
+
+        def remoteFileExists(d):
+            url = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-" + d + ".xlsx"
+            myauth = HttpNtlmAuth(":", ":")
+            r = requests.get(url, auth=myauth, stream=True)
+            if r.status_code == 404:
+                return False
+            else:
+                return True
+
+        # Data for today is not ready, back in time
+        if remoteFileExists(todaystr) == False:
+            # Back In Time
+            f = pendulum.yesterday()
+            fstr = f.format("YYYY-MM-DD")
+            print("back in time to ", )
+        else:
+            fstr = todaystr
+
+        file = dataFolder / Path("COVID-19-geographic-disbtribution-worldwide-" + fstr + ".xlsx")
 
         if not file.exists():
-            url = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-" + todaystr + ".xlsx"
+            url = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-" + fstr + ".xlsx"
             myauth = HttpNtlmAuth(":", ":")
             r = download_file(url, myauth, dataFolder)
             print("file not exist")

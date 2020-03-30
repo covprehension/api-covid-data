@@ -4,7 +4,7 @@ from requests_ntlm import HttpNtlmAuth
 import pendulum
 import pandas as pd
 import shutil
-today = pendulum.yesterday()
+today = pendulum.today()
 todaystr = today.format("YYYY-MM-DD")
 
 
@@ -29,13 +29,33 @@ root =  Path.cwd() / 'covidapp'
 
 Path.mkdir(root/'data',exist_ok=True)
 dataFolder = root / 'data'
-file = dataFolder / Path("COVID-19-geographic-disbtribution-worldwide-" + todaystr + ".xlsx")
+
+
+def remoteFileExists(d):
+    url = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-" + d + ".xlsx"
+    myauth = HttpNtlmAuth(":", ":")
+    r = requests.get(url, auth=myauth, stream=True)
+    if r.status_code == 404:
+      return False
+    else:
+      return True
+
+if remoteFileExists(todaystr) == False:
+    #Back In Time
+    print("back in time")
+    f = pendulum.yesterday()
+    fstr = f.format("YYYY-MM-DD")
+else:
+    fstr = todaystr
+
+file = dataFolder / Path("COVID-19-geographic-disbtribution-worldwide-" + fstr + ".xlsx")
 
 if not file.exists():
-    url = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-" + todaystr + ".xlsx"
+    url = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-" + fstr + ".xlsx"
+    print(fstr)
+    print("file not exist")
     myauth = HttpNtlmAuth(":", ":")
     r = download_file(url, myauth, dataFolder)
-    print("file not exist")
 else:
     print("file exist")
     r = file
