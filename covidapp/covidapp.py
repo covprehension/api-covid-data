@@ -51,7 +51,13 @@ class Ecdc(Resource):
 
         df_final = df_cases >> mask(X.geoId == "FR")
 
-        return {"response": df_final.to_json(orient='records', date_format='iso')}
+        df_final_json = df_final.to_json(orient='records', date_format='iso')
+
+        import json
+
+        datajson = json.loads(df_final_json)
+
+        return {'data':datajson}
 
 api.add_resource(Ecdc, '/covid19/ecdc/')
 
@@ -59,7 +65,7 @@ def print_date_time():
     print(time.strftime("%A, %d. %B %Y %I:%M:%S %p"))
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=print_date_time, trigger="interval", day=1)
+scheduler.add_job(func=print_date_time, trigger="interval", seconds=30)
 
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
