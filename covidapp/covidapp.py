@@ -30,7 +30,7 @@ class Ecdc(Resource):
         today= pendulum.yesterday()
         todaystr=today.format("YYYY-MM-DD")
 
-        root = Path.cwd() / 'covidapp'
+        root = Path.cwd()
 
         Path.mkdir(root / 'data', exist_ok=True)
         dataFolder = root / 'data'
