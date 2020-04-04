@@ -52,7 +52,7 @@ def consolidate_data(df, priorities):
 
     def iterate_on_row(gdata, row):
 
-        columns = ["cas_confirmes", "deces", "reanimation", "hospitalises", "gueris"]
+        columns = ["cas_confirmes", "deces", "deces_ehpad", "reanimation", "hospitalises", "gueris"]
         acc = {}
         acc.update({"date" : row["dt"]})
 

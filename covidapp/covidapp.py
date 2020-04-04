@@ -76,6 +76,7 @@ class Etalab(Resource):
         "date" : "dateRep",
         "cas_confirmes":"cases_cum",
         "deces": "death_cum" ,
+        "deces_ehpad" : "death_cum_ehpad",
         "reanimation":"ventilated" ,
         "hospitalises":"hospitalized",
         "gueris":"recover"
