@@ -70,7 +70,7 @@ class Etalab(Resource):
         root = Path.cwd()
 
         self.folder = Path(root / 'data' / self.dataFolder)
-        self.folder.mkdir(exist_ok=True)
+        self.folder.mkdir(exist_ok=True,parents=True)
 
         self.col_names = {
         "date" : "dateRep",
@@ -126,7 +126,7 @@ class Ecdc(Resource):
         root = Path.cwd()
 
         self.folder = Path(root / 'data' / self.dataFolder)
-        self.folder.mkdir(exist_ok=True)
+        self.folder.mkdir(exist_ok=True, parents=True)
 
         print("init with", self.folder)
 
