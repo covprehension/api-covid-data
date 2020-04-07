@@ -15,7 +15,7 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN groupadd -g $GID flask && useradd -m -s /bin/sh -g flask -u $UID flask
 
 COPY . /home/flask/covid
-WORKDIR /home/flask/covid/covidapp
+WORKDIR /home/flask/covid/
 
 # install dependencies
 RUN pip install --upgrade pip
