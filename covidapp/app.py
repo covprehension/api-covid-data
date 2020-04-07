@@ -12,9 +12,9 @@ from covidapp.resources.ETALAB import Etalab
 
 def type_validate():
     def validate(s):
-        if s in ["cum","simple"]:
+        if s in ["cum","daily"]:
             return s
-        raise ValidationError("Only two choices are possible : cum or simple")
+        raise ValidationError("Only two choices are possible : cum or daily")
     return validate
 
 parser = reqparse.RequestParser()
