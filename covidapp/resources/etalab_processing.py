@@ -1,14 +1,11 @@
 from dfply import *
+from covidapp.common.utils import *
 
 def consolidate_data(df, priorities):
 
     ar = list(priorities.values())
 
     def getPriority(id): return priorities[id]
-
-    @make_symbolic
-    def to_datetime(series):
-        return pd.to_datetime(series, format="%Y-%m-%d")
 
     df_fra = df >> mask(X.maille_code == "FRA")
     group_of_data = df_fra >> mask(X.source_type.isin(ar)) >> mutate(dt = to_datetime(X.date))

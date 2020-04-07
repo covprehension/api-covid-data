@@ -2,12 +2,20 @@ from flask_restful import Resource
 from covidapp.common.utils import *
 from requests_ntlm import HttpNtlmAuth
 from covidapp.resources.errors import *
+import pandas as pd
 
 class Ecdc(Resource):
 
     def __init__(self, **kwargs):
         self.dataFolder = kwargs['dataFolder']
         self.parser = kwargs['parser']
+
+        self.dayly_col_names = {
+            "date": "dateRep",
+            "cases": "cases_daily",
+            "deaths": "deaths_daily",
+        }
+
         root = Path.cwd()
 
         self.folder = Path(root / 'data' / self.dataFolder)
@@ -37,14 +45,21 @@ class Ecdc(Resource):
             r = file
 
         df = pd.read_excel(r)
+        df_working = df >> mask(X.geoId == "FR")
 
         if (typeOfData == "cum"):
-            df_deaths = df >> group_by(X.geoId) >> arrange(X.dateRep, ascending=True) >> mutate(death_cum=cumsum(X.deaths))
-            df_cases = df_deaths >> group_by(X.geoId) >> arrange(X.dateRep, ascending=True) >> mutate(cases_cum=cumsum(X.cases))
+            df_deaths = df_working >> arrange(X.dateRep, ascending=True) >> mutate(deaths_cum=cumsum(X.deaths))
+            df_cases = df_deaths >> arrange(X.dateRep, ascending=True) >> mutate(cases_cum=cumsum(X.cases))
+            df_deaths_growth = df_cases >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_cum=growth(X.deaths_cum))
+            df_cases_growth = df_deaths_growth  >> arrange(X.dateRep, ascending=True) >> mutate(growth_cases_cum= growth(X.cases_cum))
+            df_final = df_cases_growth >> select(X.dateRep, X.deaths_cum, X.cases_cum, X.growth_cases_cum, X.growth_deaths_cum)
         else:
-            df_cases = df
 
-        df_final = df_cases >> mask(X.geoId == "FR")
+            df_deaths_growth = df_working >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_daily=growth(X.deaths))
+            df_cases_growth = df_deaths_growth  >> arrange(X.dateRep, ascending=True) >> mutate(growth_cases_daily= growth(X.cases))
+            df_final = df_cases_growth >> select(X.dateRep, X.deaths,X.cases,X.growth_cases_daily, X.growth_deaths_daily)
+            df_final.rename(columns=self.dayly_col_names, inplace=True)
+
 
         df_final_json = df_final.to_json(orient='records', date_format='iso')
 

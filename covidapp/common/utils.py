@@ -53,8 +53,15 @@ def readyOrBackInTime(urlToTest):
     else:
         return todaystr
 
+# functions for dfply
 
+@make_symbolic
+def growth(series):
+    return series.pct_change()
 
+@make_symbolic
+def to_datetime(series):
+    return pd.to_datetime(series, format="%Y-%m-%d")
 
 
 

@@ -2,6 +2,7 @@ from flask_restful import Resource
 from covidapp.common.utils import *
 from covidapp.resources.etalab_processing import *
 from covidapp.resources.errors import *
+import pandas as pd
 
 class Etalab(Resource):
 
@@ -17,8 +18,8 @@ class Etalab(Resource):
         self.col_names = {
         "date" : "dateRep",
         "cas_confirmes":"cases_cum",
-        "deces": "death_cum" ,
-        "deces_ehpad" : "death_ehpad_cum",
+        "deces": "deaths_cum" ,
+        "deces_ehpad" : "deaths_ehpad_cum",
         "reanimation":"ventilated_cum" ,
         "hospitalises":"hospitalized_cum",
         "gueris":"recover_cum"
@@ -57,9 +58,13 @@ class Etalab(Resource):
             4: 'opencovid19-fr'
         }
 
-        df_final = consolidate_data(df,SOURCE_PRIORITIES)
-        #print(df_final.columns)
+        df_working = consolidate_data(df,SOURCE_PRIORITIES)
+
+        df_deaths_growth = df_working >> arrange(X.date, ascending=True) >> mutate(growth_deaths_cum=growth(X.deces))
+        df_final = df_deaths_growth >> arrange(X.date, ascending=True) >> mutate(growth_cases_cum=growth(X.cas_confirmes))
+
         df_final.rename(columns=self.col_names, inplace=True)
+
         df_final_json = df_final.to_json(orient='records', date_format='iso')
 
         datajson = json.loads(df_final_json)
