@@ -60,6 +60,18 @@ def growth(series):
     return series.pct_change()
 
 @make_symbolic
+def normalized_growth(series,min,max):
+    # reverse function nm to range min max
+    # for index, value in series.iteritems():
+    #     print("index = " , index, " value =", value)
+    #     if np.isfinite(value) or np.isnan(value):
+    #         pass
+    #     else:
+    #         values = (min + ((value-min)(max - min) / (max - min)))
+    #         series.at[index] = values
+    return ((series-min) / (max - min))
+
+@make_symbolic
 def to_datetime(series):
     return pd.to_datetime(series, format="%Y-%m-%d")
 

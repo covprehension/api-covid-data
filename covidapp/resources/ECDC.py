@@ -46,18 +46,38 @@ class Ecdc(Resource):
 
         df = pd.read_excel(r)
         df_working = df >> mask(X.geoId == "FR")
+        pd.set_option('display.max_columns', 20)
+        pd.set_option('display.width', 500)
 
         if (typeOfData == "cum"):
             df_deaths = df_working >> arrange(X.dateRep, ascending=True) >> mutate(deaths_cum=cumsum(X.deaths))
             df_cases = df_deaths >> arrange(X.dateRep, ascending=True) >> mutate(cases_cum=cumsum(X.cases))
             df_deaths_growth = df_cases >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_cum=growth(X.deaths_cum))
             df_cases_growth = df_deaths_growth  >> arrange(X.dateRep, ascending=True) >> mutate(growth_cases_cum= growth(X.cases_cum))
-            df_final = df_cases_growth >> select(X.dateRep, X.deaths_cum, X.cases_cum, X.growth_cases_cum, X.growth_deaths_cum)
+
+            df_cases_growth = df_cases_growth.replace(np.inf, np.nan)
+
+            minnm = min(df_cases_growth.growth_deaths_cum.min(), df_cases_growth.growth_cases_cum.min())
+            maxnm = max(df_cases_growth.growth_deaths_cum.max(), df_cases_growth.growth_cases_cum.max())
+
+            df_deaths_nmgrowth = df_cases_growth >> mutate(
+                nm_growth_deaths_cum=normalized_growth(X.growth_deaths_cum, minnm, maxnm))
+            df_cases_nmgrowth = df_deaths_nmgrowth >> mutate(
+                nm_growth_cases_cum=normalized_growth(X.growth_cases_cum, minnm, maxnm))
+            df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths_cum, X.cases_cum, X.growth_deaths_cum, X.growth_cases_cum, X.nm_growth_deaths_cum, X.nm_growth_cases_cum )
         else:
 
             df_deaths_growth = df_working >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_daily=growth(X.deaths))
             df_cases_growth = df_deaths_growth  >> arrange(X.dateRep, ascending=True) >> mutate(growth_cases_daily= growth(X.cases))
-            df_final = df_cases_growth >> select(X.dateRep, X.deaths,X.cases,X.growth_cases_daily, X.growth_deaths_daily)
+            df_cases_growth = df_cases_growth.replace(np.inf, np.nan)
+
+            minnm = min(df_cases_growth.growth_deaths_daily.min(),df_cases_growth.growth_cases_daily.min())
+            maxnm = max(df_cases_growth.growth_deaths_daily.max(),df_cases_growth.growth_cases_daily.max())
+
+            df_deaths_nmgrowth = df_cases_growth >> mutate(nm_growth_deaths_daily=normalized_growth(X.growth_deaths_daily, minnm,maxnm ))
+            df_cases_nmgrowth = df_deaths_nmgrowth >> mutate(nm_growth_cases_daily=normalized_growth(X.growth_cases_daily, minnm,maxnm ))
+
+            df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths,X.cases,X.growth_deaths_daily,X.growth_cases_daily,X.nm_growth_deaths_daily,X.nm_growth_cases_daily,X.nm_growth_cases_daily )
             df_final.rename(columns=self.dayly_col_names, inplace=True)
 
 

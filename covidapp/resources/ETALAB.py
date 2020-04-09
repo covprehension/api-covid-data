@@ -61,7 +61,19 @@ class Etalab(Resource):
         df_working = consolidate_data(df,SOURCE_PRIORITIES)
 
         df_deaths_growth = df_working >> arrange(X.date, ascending=True) >> mutate(growth_deaths_cum=growth(X.deces))
-        df_final = df_deaths_growth >> arrange(X.date, ascending=True) >> mutate(growth_cases_cum=growth(X.cas_confirmes))
+        df_cases_growth = df_deaths_growth >> arrange(X.date, ascending=True) >> mutate(growth_cases_cum=growth(X.cas_confirmes))
+
+        df_cases_growth = df_cases_growth.replace(np.inf, np.nan)
+
+        minnm = min(df_cases_growth.growth_deaths_cum.min(), df_cases_growth.growth_cases_cum.min())
+        maxnm = max(df_cases_growth.growth_deaths_cum.max(), df_cases_growth.growth_cases_cum.max())
+
+        df_deaths_nmgrowth = df_cases_growth >> mutate(
+            nm_growth_deaths_cum=normalized_growth(X.growth_deaths_cum, minnm, maxnm))
+        df_cases_nmgrowth = df_deaths_nmgrowth >> mutate(
+            nm_growth_cases_cum=normalized_growth(X.growth_cases_cum, minnm, maxnm))
+        df_final = df_cases_nmgrowth
+        #>> select(X.dateRep, X.deaths_cum, X.cases_cum, X.growth_deaths_cum, X.growth_cases_cum, X.nm_growth_deaths_cum, X.nm_growth_cases_cum)
 
         df_final.rename(columns=self.col_names, inplace=True)
 
