@@ -59,6 +59,7 @@ class Etalab(Resource):
         }
 
         df_working = consolidate_data(df,SOURCE_PRIORITIES)
+        df_working.index = pd.to_datetime(df_working.date)
 
         df_deaths_growth = df_working >> arrange(X.date, ascending=True) >> mutate(growth_deaths_cum=growth(X.deces))
         df_cases_growth = df_deaths_growth >> arrange(X.date, ascending=True) >> mutate(growth_cases_cum=growth(X.cas_confirmes))
@@ -72,10 +73,16 @@ class Etalab(Resource):
             nm_growth_deaths_cum=normalized_growth(X.growth_deaths_cum, minnm, maxnm))
         df_cases_nmgrowth = df_deaths_nmgrowth >> mutate(
             nm_growth_cases_cum=normalized_growth(X.growth_cases_cum, minnm, maxnm))
+
         df_final = df_cases_nmgrowth
         #>> select(X.dateRep, X.deaths_cum, X.cases_cum, X.growth_deaths_cum, X.growth_cases_cum, X.nm_growth_deaths_cum, X.nm_growth_cases_cum)
 
         df_final.rename(columns=self.col_names, inplace=True)
+
+        dict_dup_deaths_cum = compute_dict(df_final, "deaths_cum")
+
+        df_final[["Xdatei", "XDatef", "XDelta", "XValue"]] = df_final.apply(daysBeforeMultiply, result_type="expand", dict=dict_dup_deaths_cum, df=df_final,
+                                                            deaths_cum=df_final['deaths_cum'], axis=1)
 
         df_final_json = df_final.to_json(orient='records', date_format='iso')
 

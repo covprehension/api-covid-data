@@ -49,9 +49,14 @@ class Ecdc(Resource):
         pd.set_option('display.max_columns', 20)
         pd.set_option('display.width', 500)
 
+        df_working.index = pd.to_datetime(df_working.dateRep)
+
         if (typeOfData == "cum"):
+
             df_deaths = df_working >> arrange(X.dateRep, ascending=True) >> mutate(deaths_cum=cumsum(X.deaths))
             df_cases = df_deaths >> arrange(X.dateRep, ascending=True) >> mutate(cases_cum=cumsum(X.cases))
+            dict_dup_deaths_cum = compute_dict(df_cases,"deaths_cum")
+
             df_deaths_growth = df_cases >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_cum=growth(X.deaths_cum))
             df_cases_growth = df_deaths_growth  >> arrange(X.dateRep, ascending=True) >> mutate(growth_cases_cum= growth(X.cases_cum))
 
@@ -64,7 +69,12 @@ class Ecdc(Resource):
                 nm_growth_deaths_cum=normalized_growth(X.growth_deaths_cum, minnm, maxnm))
             df_cases_nmgrowth = df_deaths_nmgrowth >> mutate(
                 nm_growth_cases_cum=normalized_growth(X.growth_cases_cum, minnm, maxnm))
-            df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths_cum, X.cases_cum, X.growth_deaths_cum, X.growth_cases_cum, X.nm_growth_deaths_cum, X.nm_growth_cases_cum )
+
+            df_cases_nmgrowth[["Xdatei", "XDatef", "XDelta", "XValue"]] = df_cases_nmgrowth.apply(daysBeforeMultiply, result_type="expand", dict=dict_dup_deaths_cum, df=df_cases_nmgrowth,
+                                                            deaths_cum=df_cases_nmgrowth['deaths_cum'], axis=1)
+
+            df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths_cum, X.cases_cum, X.growth_deaths_cum,
+                                                   X.growth_cases_cum, X.nm_growth_deaths_cum, X.nm_growth_cases_cum, X.Xdatei, X.XDatef, X.XDelta, X.XValue)
         else:
 
             df_deaths_growth = df_working >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_daily=growth(X.deaths))
@@ -80,7 +90,7 @@ class Ecdc(Resource):
             df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths,X.cases,X.growth_deaths_daily,X.growth_cases_daily,X.nm_growth_deaths_daily,X.nm_growth_cases_daily,X.nm_growth_cases_daily )
             df_final.rename(columns=self.dayly_col_names, inplace=True)
 
-
+        #df_final.to_csv('outxx.csv')
         df_final_json = df_final.to_json(orient='records', date_format='iso')
 
         datajson = json.loads(df_final_json)

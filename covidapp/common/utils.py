@@ -71,10 +71,58 @@ def normalized_growth(series,min,max):
     #         series.at[index] = values
     return ((series-min) / (max - min))
 
+
+
 @make_symbolic
 def to_datetime(series):
     return pd.to_datetime(series, format="%Y-%m-%d")
 
+def compute_dict(df, name):
+    df_map_value = df.drop_duplicates([name])
+    dict_value = df_map_value[name].to_dict()
+    return {v: k for k, v in dict_value.items()}
 
+def daysBeforeMultiply(x, **kwargs):
 
+    # get numerical index of row
+    numericIndex = kwargs["df"].index.get_loc(x.name)
+    dict_inverted = kwargs["dict"]
+
+    # Skip the first line, returning Nan
+    if numericIndex == 0 or np.isnan(x['deaths_cum']):
+        return x.name, np.NaN, np.NaN, np.NaN
+
+    # If value_cum is the same than the previous row (nothing changed),
+    # we need some tweaking (compute using the datebefore) to return same data
+    ilocvalue = kwargs["df"].iloc[[numericIndex - 1]]["deaths_cum"][0]
+    if x['deaths_cum'] == ilocvalue:
+        name = dict_inverted[x['deaths_cum']]
+    else:
+        name = x.name
+
+    # Series to compare with actual row
+    series =  kwargs["deaths_cum"]
+    # Cut this series by taking in account only the days before actual date
+    cutedSeries = series[series.index < name]
+    rowValueToCompare = float(x['deaths_cum'])
+
+    # User query to filter rows
+    # https://stackoverflow.com/questions/40171498/is-there-a-query-method-or-similar-for-pandas-series-pandas-series-query
+    result = cutedSeries.to_frame().query('deaths_cum > 0').query(f'({rowValueToCompare} / deaths_cum) >= 2.0')
+
+    # If empty return Nan
+    if result.empty:
+        return x.name, np.NaN, np.NaN, np.NaN
+
+    # Get the last result
+    oneResult = result.tail(1).iloc[:, 0]
+
+    # Compute values to return
+    value = (rowValueToCompare/oneResult.values[0])
+    idx = oneResult.index[0]
+    # Delta between the actual row day, and the >=2 day
+    delta = name - idx
+
+    # return columns
+    return name , idx, delta.days, value
 
