@@ -5,19 +5,22 @@ class Metadata(Resource):
         #https://flask.palletsprojects.com/en/1.1.x/quickstart/#apis-with-json
         return {
             'data':
-                {"ECDC":{
+                {"ecdc":{
                     "description" : "ECDC data",
                     "type" : [{
                         "name" : "cum",
+                        "label" : "Données cumulées",
                         "options":[]
                               },{
                         "name": "daily",
+                        "label": "Données journalières",
                         "options":["rolling"]
                     }]}
-                ,"ETALAB": {
+                ,"etalab": {
                     "description": "Etalab french data consolidated",
                     "type": [{
                         "name": "cum",
+                        "label": "Données cumulées",
                         "options": []
                 }]}
             }}
