@@ -71,7 +71,9 @@ def normalized_growth(series,min,max):
     #         series.at[index] = values
     return ((series-min) / (max - min))
 
-
+@make_symbolic
+def rolling_mean(series,w,w_type=None):
+    return series.rolling(window=w, win_type=w_type).mean()
 
 @make_symbolic
 def to_datetime(series):

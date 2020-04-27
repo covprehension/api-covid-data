@@ -27,6 +27,11 @@ class Ecdc(Resource):
 
         args = self.parser.parse_args()
         typeOfData = args['type']
+        rolling = args['rolling']
+        print("rolling = ", rolling)
+
+        if (typeOfData == "daily") and args['rolling'] == None:
+            raise NeedARollingWindowError
 
         url = "https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-" + getTodayStr() + ".xlsx"
 
@@ -87,7 +92,9 @@ class Ecdc(Resource):
             df_deaths_nmgrowth = df_cases_growth >> mutate(nm_growth_deaths_daily=normalized_growth(X.growth_deaths_daily, minnm,maxnm ))
             df_cases_nmgrowth = df_deaths_nmgrowth >> mutate(nm_growth_cases_daily=normalized_growth(X.growth_cases_daily, minnm,maxnm ))
 
-            df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths,X.cases,X.growth_deaths_daily,X.growth_cases_daily,X.nm_growth_deaths_daily,X.nm_growth_cases_daily,X.nm_growth_cases_daily )
+            df_rolling_mean_deaths = df_cases_nmgrowth >> mutate(rolling_deaths=rolling_mean(X.deaths, "{r}D".format(r=rolling), None))
+
+            df_final = df_rolling_mean_deaths >> select(X.dateRep, X.deaths,X.cases,X.growth_deaths_daily,X.growth_cases_daily,X.nm_growth_deaths_daily,X.nm_growth_cases_daily,X.nm_growth_cases_daily, X.rolling_deaths)
             df_final.rename(columns=self.dayly_col_names, inplace=True)
 
         #df_final.to_csv('outxx.csv')
