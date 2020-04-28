@@ -15,17 +15,14 @@ class Metadata(Resource):
                         "name": "daily",
                         "label": "Données journalières",
                         "options":[
-                            {"label":"fenetre glissante",
-                             "value":"rolling"},
-                            {"label":"Croissance",
-                             "value":"growth"}]
+                            {"label":"Moyenne mobile des décés sur 3 jours",
+                             "value":"rolling_deaths"}]
                     }]}
                 ,"etalab": {
                     "description": "Etalab french data consolidated",
                     "type": [{
                         "name": "cum",
                         "label": "Données cumulées",
-                        "options": [{"label":"Croissance",
-                             "value":"growth"}]
+                        "options": []
                 }]}
             }}
