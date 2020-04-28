@@ -14,13 +14,18 @@ class Metadata(Resource):
                               },{
                         "name": "daily",
                         "label": "Données journalières",
-                        "options":["rolling"]
+                        "options":[
+                            {"label":"fenetre glissante",
+                             "value":"rolling"},
+                            {"label":"Croissance",
+                             "value":"growth"}]
                     }]}
                 ,"etalab": {
                     "description": "Etalab french data consolidated",
                     "type": [{
                         "name": "cum",
                         "label": "Données cumulées",
-                        "options": []
+                        "options": [{"label":"Croissance",
+                             "value":"growth"}]
                 }]}
             }}
