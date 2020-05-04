@@ -18,20 +18,23 @@ class Etalab(Resource):
         self.col_names = {
         "date" : "dateRep",
         "cas_confirmes":"cases_cum",
-        "deces": "deaths_cum" ,
+        "deces": "deaths_hospital_cum" ,
         "deces_ehpad" : "deaths_ehpad_cum",
-        "reanimation":"ventilated_cum" ,
-        "hospitalises":"hospitalized_cum",
+        "reanimation":"ventilated_daily_state" ,
+        "hospitalises":"hospitalized_daily_state",
         "gueris":"recover_cum"
         }
 
     def get(self):
 
+        # ECDC DATA ARE CUMULATED AND not consolidated, we compute daily here.
+
         args = self.parser.parse_args()
         typeOfData = args['type']
+        rolling = args['rolling']
 
-        if typeOfData != "cum":
-            raise SimpleNotExistsError
+        if (typeOfData == "daily") and args['rolling'] == None:
+            raise NeedARollingWindowError
 
         url = "https://raw.githubusercontent.com/opencovid19-fr/data/master/dist/chiffres-cles.csv"
 
@@ -74,15 +77,79 @@ class Etalab(Resource):
         df_cases_nmgrowth = df_deaths_nmgrowth >> mutate(
             nm_growth_cases_cum=normalized_growth(X.growth_cases_cum, minnm, maxnm))
 
-        df_final = df_cases_nmgrowth
-        #>> select(X.dateRep, X.deaths_cum, X.cases_cum, X.growth_deaths_cum, X.growth_cases_cum, X.nm_growth_deaths_cum, X.nm_growth_cases_cum)
+        # Recompute cum data for some columns ...
+        df_working_cum_deaths_all = df_cases_nmgrowth >> mutate(deaths_all_cum= X.deces + X.deces_ehpad)
 
-        df_final.rename(columns=self.col_names, inplace=True)
+        # Recompute daily data for some columns ...
 
-        dict_dup_deaths_cum = compute_dict(df_final, "deaths_cum")
+        df_working_daily_deaths_hospital = df_working_cum_deaths_all >> mutate(deaths_hospital_cum_daily=rollbackcum(X.deces))
+        df_working_daily_deaths_ehpad = df_working_daily_deaths_hospital >> mutate(deaths_ehpad_cum_daily=rollbackcum(X.deces_ehpad))
 
-        df_final[["Xdatei", "XDatef", "XDelta", "XValue"]] = df_final.apply(daysBeforeMultiply, result_type="expand", dict=dict_dup_deaths_cum, df=df_final,
-                                                            deaths_cum=df_final['deaths_cum'], axis=1)
+        df_working_daily_deaths_all = df_working_daily_deaths_ehpad >> mutate(
+            deaths_all_cum_daily=X.deaths_hospital_cum_daily + X.deaths_ehpad_cum_daily)
+
+        df_working_daily_cases = df_working_daily_deaths_all >> mutate(cases_cum_daily=rollbackcum(X.cas_confirmes))
+        df_working_ventilated = df_working_daily_cases >> mutate(ventilated_daily_diff=rollbackcum(X.reanimation))
+        df_working_hospitalized = df_working_ventilated >> mutate(hospitalized_daily_diff=rollbackcum(X.hospitalises))
+        df_working_recover = df_working_hospitalized >> mutate(recover_cum_daily=rollbackcum(X.gueris))
+
+        df_working_recover.rename(columns=self.col_names, inplace=True)
+
+        if (typeOfData == "cum"):
+
+            dict_dup_deaths_cum = compute_dict(df_working_recover, "deaths_all_cum")
+
+            df_working_recover[["Xdatei", "XDatef", "XDelta", "XValue"]] = df_working_recover.apply(daysBeforeMultiply, result_type="expand", dict=dict_dup_deaths_cum, df=df_working_recover,
+                                                                deaths_all_cum=df_working_recover['deaths_all_cum'], axis=1)
+
+            df_final = df_working_recover >> select(X.dateRep,
+                                          X.cases_cum,
+                                          X.deaths_hospital_cum,
+                                          X.deaths_ehpad_cum,
+                                          X.deaths_all_cum,
+                                          X.ventilated_daily_state,
+                                          X.hospitalized_daily_state,
+                                          X.ventilated_daily_diff,
+                                          X.hospitalized_daily_diff,
+                                          X.recover_cum,
+                                          X.growth_deaths_cum,
+                                          X.growth_cases_cum,
+                                          X.nm_growth_deaths_cum,
+                                          X.nm_growth_cases_cum,
+                                          X.Xdatei,
+                                          X.XDatef,
+                                          X.XDelta,
+                                          X.XValue )
+
+
+        else:
+
+            df_final_rolling_mean_deaths_hosp = df_working_recover >> mutate(
+                rolling_deaths_hospital_daily=rolling_mean(X.deaths_hospital_cum_daily, "{r}D".format(r=rolling), None))
+
+            df_final_rolling_mean_deaths_ehpad = df_final_rolling_mean_deaths_hosp >> mutate(
+                rolling_deaths_ehpad_daily=rolling_mean(X.deaths_ehpad_cum_daily, "{r}D".format(r=rolling), None))
+
+            df_final_rolling_mean_cases = df_final_rolling_mean_deaths_ehpad >> mutate(
+                rolling_cases_daily=rolling_mean(X.cases_cum_daily, "{r}D".format(r=rolling), None))
+
+            df_final_rolling_mean_deaths_all = df_final_rolling_mean_cases >> mutate(
+                rolling_deaths_all_daily=rolling_mean(X.deaths_all_cum_daily, "{r}D".format(r=rolling), None))
+
+            df_final = df_final_rolling_mean_deaths_all >> select(X.dateRep,
+                                                             X.cases_cum_daily,
+                                                             X.deaths_hospital_cum_daily,
+                                                             X.deaths_ehpad_cum_daily,
+                                                             X.deaths_all_cum_daily,
+                                                             X.ventilated_daily_state,
+                                                             X.hospitalized_daily_state,
+                                                             X.ventilated_daily_diff,
+                                                             X.hospitalized_daily_diff,
+                                                             X.recover_cum_daily,
+                                                             X.rolling_deaths_hospital_daily,
+                                                             X.rolling_deaths_ehpad_daily,
+                                                             X.rolling_deaths_all_daily,
+                                                             X.rolling_cases_daily)
 
         df_final_json = df_final.to_json(orient='records', date_format='iso')
 

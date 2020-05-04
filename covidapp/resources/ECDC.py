@@ -25,6 +25,8 @@ class Ecdc(Resource):
 
     def get(self):
 
+        # ECDC DATA ARE DAILY, we compute cumulated here.
+
         args = self.parser.parse_args()
         typeOfData = args['type']
         rolling = args['rolling']
@@ -58,11 +60,11 @@ class Ecdc(Resource):
 
         if (typeOfData == "cum"):
 
-            df_deaths = df_working >> arrange(X.dateRep, ascending=True) >> mutate(deaths_cum=cumsum(X.deaths))
+            df_deaths = df_working >> arrange(X.dateRep, ascending=True) >> mutate(deaths_all_cum=cumsum(X.deaths))
             df_cases = df_deaths >> arrange(X.dateRep, ascending=True) >> mutate(cases_cum=cumsum(X.cases))
-            dict_dup_deaths_cum = compute_dict(df_cases,"deaths_cum")
+            dict_dup_deaths_cum = compute_dict(df_cases,"deaths_all_cum")
 
-            df_deaths_growth = df_cases >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_cum=growth(X.deaths_cum))
+            df_deaths_growth = df_cases >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_cum=growth(X.deaths_all_cum))
             df_cases_growth = df_deaths_growth  >> arrange(X.dateRep, ascending=True) >> mutate(growth_cases_cum= growth(X.cases_cum))
 
             df_cases_growth = df_cases_growth.replace(np.inf, np.nan)
@@ -76,9 +78,9 @@ class Ecdc(Resource):
                 nm_growth_cases_cum=normalized_growth(X.growth_cases_cum, minnm, maxnm))
 
             df_cases_nmgrowth[["Xdatei", "XDatef", "XDelta", "XValue"]] = df_cases_nmgrowth.apply(daysBeforeMultiply, result_type="expand", dict=dict_dup_deaths_cum, df=df_cases_nmgrowth,
-                                                            deaths_cum=df_cases_nmgrowth['deaths_cum'], axis=1)
+                                                            deaths_all_cum=df_cases_nmgrowth['deaths_all_cum'], axis=1)
 
-            df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths_cum, X.cases_cum, X.growth_deaths_cum,
+            df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths_all_cum, X.cases_cum, X.growth_deaths_cum,
                                                    X.growth_cases_cum, X.nm_growth_deaths_cum, X.nm_growth_cases_cum, X.Xdatei, X.XDatef, X.XDelta, X.XValue)
         else:
 
@@ -92,9 +94,19 @@ class Ecdc(Resource):
             df_deaths_nmgrowth = df_cases_growth >> mutate(nm_growth_deaths_daily=normalized_growth(X.growth_deaths_daily, minnm,maxnm ))
             df_cases_nmgrowth = df_deaths_nmgrowth >> mutate(nm_growth_cases_daily=normalized_growth(X.growth_cases_daily, minnm,maxnm ))
 
-            df_rolling_mean_deaths = df_cases_nmgrowth >> mutate(rolling_deaths=rolling_mean(X.deaths, "{r}D".format(r=rolling), None))
+            df_rolling_mean_deaths = df_cases_nmgrowth >> mutate(rolling_deaths_daily=rolling_mean(X.deaths, "{r}D".format(r=rolling), None))
+            df_rolling_mean_cases = df_rolling_mean_deaths >> mutate(
+                rolling_cases_daily=rolling_mean(X.cases, "{r}D".format(r=rolling), None))
 
-            df_final = df_rolling_mean_deaths >> select(X.dateRep, X.deaths,X.cases,X.growth_deaths_daily,X.growth_cases_daily,X.nm_growth_deaths_daily,X.nm_growth_cases_daily,X.nm_growth_cases_daily, X.rolling_deaths)
+            df_final = df_rolling_mean_cases >> select(X.dateRep,
+                                                       X.deaths,
+                                                       X.cases,
+                                                       X.growth_deaths_daily,
+                                                       X.growth_cases_daily,
+                                                       X.nm_growth_deaths_daily,
+                                                       X.nm_growth_cases_daily,
+                                                       X.rolling_cases_daily,
+                                                       X.rolling_deaths_daily)
             df_final.rename(columns=self.dayly_col_names, inplace=True)
 
         #df_final.to_csv('outxx.csv')

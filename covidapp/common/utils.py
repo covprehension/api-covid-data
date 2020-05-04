@@ -60,6 +60,11 @@ def growth(series):
     return series.pct_change()
 
 @make_symbolic
+def rollbackcum(series):
+    return series.diff()
+
+
+@make_symbolic
 def normalized_growth(series,min,max):
     # reverse function nm to range min max
     # for index, value in series.iteritems():
@@ -91,26 +96,26 @@ def daysBeforeMultiply(x, **kwargs):
     dict_inverted = kwargs["dict"]
 
     # Skip the first line, returning Nan
-    if numericIndex == 0 or np.isnan(x['deaths_cum']):
+    if numericIndex == 0 or np.isnan(x['deaths_all_cum']):
         return x.name, np.NaN, np.NaN, np.NaN
 
     # If value_cum is the same than the previous row (nothing changed),
     # we need some tweaking (compute using the datebefore) to return same data
-    ilocvalue = kwargs["df"].iloc[[numericIndex - 1]]["deaths_cum"][0]
-    if x['deaths_cum'] == ilocvalue:
-        name = dict_inverted[x['deaths_cum']]
+    ilocvalue = kwargs["df"].iloc[[numericIndex - 1]]["deaths_all_cum"][0]
+    if x['deaths_all_cum'] == ilocvalue:
+        name = dict_inverted[x['deaths_all_cum']]
     else:
         name = x.name
 
     # Series to compare with actual row
-    series =  kwargs["deaths_cum"]
+    series =  kwargs["deaths_all_cum"]
     # Cut this series by taking in account only the days before actual date
     cutedSeries = series[series.index < name]
-    rowValueToCompare = float(x['deaths_cum'])
+    rowValueToCompare = float(x['deaths_all_cum'])
 
     # User query to filter rows
     # https://stackoverflow.com/questions/40171498/is-there-a-query-method-or-similar-for-pandas-series-pandas-series-query
-    result = cutedSeries.to_frame().query('deaths_cum > 0').query(f'({rowValueToCompare} / deaths_cum) >= 2.0')
+    result = cutedSeries.to_frame().query('deaths_all_cum > 0').query(f'({rowValueToCompare} / deaths_all_cum) >= 2.0')
 
     # If empty return Nan
     if result.empty:
