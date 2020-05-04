@@ -17,12 +17,12 @@ class Etalab(Resource):
 
         self.col_names = {
         "date" : "dateRep",
-        "cas_confirmes":"cases_cum",
-        "deces": "deaths_hospital_cum" ,
-        "deces_ehpad" : "deaths_ehpad_cum",
+        "cas_confirmes":"cases_cum_daily",
+        "deces": "deaths_hospital_cum_daily" ,
+        "deces_ehpad" : "deaths_ehpad_cum_daily",
         "reanimation":"ventilated_daily_state" ,
         "hospitalises":"hospitalized_daily_state",
-        "gueris":"recover_cum"
+        "gueris":"recover_cum_daily"
         }
 
     def get(self):
@@ -78,40 +78,40 @@ class Etalab(Resource):
             nm_growth_cases_cum=normalized_growth(X.growth_cases_cum, minnm, maxnm))
 
         # Recompute cum data for some columns ...
-        df_working_cum_deaths_all = df_cases_nmgrowth >> mutate(deaths_all_cum= X.deces + X.deces_ehpad)
+        df_working_cum_deaths_all = df_cases_nmgrowth >> mutate(deaths_all_cum_daily= X.deces + X.deces_ehpad)
 
         # Recompute daily data for some columns ...
 
-        df_working_daily_deaths_hospital = df_working_cum_deaths_all >> mutate(deaths_hospital_cum_daily=rollbackcum(X.deces))
-        df_working_daily_deaths_ehpad = df_working_daily_deaths_hospital >> mutate(deaths_ehpad_cum_daily=rollbackcum(X.deces_ehpad))
+        df_working_daily_deaths_hospital = df_working_cum_deaths_all >> mutate(deaths_hospital_daily=rollbackcum(X.deces))
+        df_working_daily_deaths_ehpad = df_working_daily_deaths_hospital >> mutate(deaths_ehpad_daily=rollbackcum(X.deces_ehpad))
 
         df_working_daily_deaths_all = df_working_daily_deaths_ehpad >> mutate(
-            deaths_all_cum_daily=X.deaths_hospital_cum_daily + X.deaths_ehpad_cum_daily)
+            deaths_all_daily=X.deaths_hospital_daily + X.deaths_ehpad_daily)
 
-        df_working_daily_cases = df_working_daily_deaths_all >> mutate(cases_cum_daily=rollbackcum(X.cas_confirmes))
+        df_working_daily_cases = df_working_daily_deaths_all >> mutate(cases_daily=rollbackcum(X.cas_confirmes))
         df_working_ventilated = df_working_daily_cases >> mutate(ventilated_daily_diff=rollbackcum(X.reanimation))
         df_working_hospitalized = df_working_ventilated >> mutate(hospitalized_daily_diff=rollbackcum(X.hospitalises))
-        df_working_recover = df_working_hospitalized >> mutate(recover_cum_daily=rollbackcum(X.gueris))
+        df_working_recover = df_working_hospitalized >> mutate(recover_daily=rollbackcum(X.gueris))
 
         df_working_recover.rename(columns=self.col_names, inplace=True)
 
         if (typeOfData == "cum"):
 
-            dict_dup_deaths_cum = compute_dict(df_working_recover, "deaths_all_cum")
+            dict_dup_deaths_cum = compute_dict(df_working_recover, "deaths_all_cum_daily")
 
             df_working_recover[["Xdatei", "XDatef", "XDelta", "XValue"]] = df_working_recover.apply(daysBeforeMultiply, result_type="expand", dict=dict_dup_deaths_cum, df=df_working_recover,
-                                                                deaths_all_cum=df_working_recover['deaths_all_cum'], axis=1)
+                                                                deaths_all_cum_daily=df_working_recover['deaths_all_cum_daily'], axis=1)
 
             df_final = df_working_recover >> select(X.dateRep,
-                                          X.cases_cum,
-                                          X.deaths_hospital_cum,
-                                          X.deaths_ehpad_cum,
-                                          X.deaths_all_cum,
+                                          X.cases_cum_daily,
+                                          X.deaths_hospital_cum_daily,
+                                          X.deaths_ehpad_cum_daily,
+                                          X.deaths_all_cum_daily,
                                           X.ventilated_daily_state,
                                           X.hospitalized_daily_state,
                                           X.ventilated_daily_diff,
                                           X.hospitalized_daily_diff,
-                                          X.recover_cum,
+                                          X.recover_cum_daily,
                                           X.growth_deaths_cum,
                                           X.growth_cases_cum,
                                           X.nm_growth_deaths_cum,
@@ -137,15 +137,15 @@ class Etalab(Resource):
                 rolling_deaths_all_daily=rolling_mean(X.deaths_all_cum_daily, "{r}D".format(r=rolling), None))
 
             df_final = df_final_rolling_mean_deaths_all >> select(X.dateRep,
-                                                             X.cases_cum_daily,
-                                                             X.deaths_hospital_cum_daily,
-                                                             X.deaths_ehpad_cum_daily,
-                                                             X.deaths_all_cum_daily,
+                                                             X.cases_daily,
+                                                             X.deaths_hospital_daily,
+                                                             X.deaths_ehpad_daily,
+                                                             X.deaths_all_daily,
                                                              X.ventilated_daily_state,
                                                              X.hospitalized_daily_state,
                                                              X.ventilated_daily_diff,
                                                              X.hospitalized_daily_diff,
-                                                             X.recover_cum_daily,
+                                                             X.recover_daily,
                                                              X.rolling_deaths_hospital_daily,
                                                              X.rolling_deaths_ehpad_daily,
                                                              X.rolling_deaths_all_daily,

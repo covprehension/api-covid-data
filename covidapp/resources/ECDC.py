@@ -60,12 +60,12 @@ class Ecdc(Resource):
 
         if (typeOfData == "cum"):
 
-            df_deaths = df_working >> arrange(X.dateRep, ascending=True) >> mutate(deaths_all_cum=cumsum(X.deaths))
-            df_cases = df_deaths >> arrange(X.dateRep, ascending=True) >> mutate(cases_cum=cumsum(X.cases))
-            dict_dup_deaths_cum = compute_dict(df_cases,"deaths_all_cum")
+            df_deaths = df_working >> arrange(X.dateRep, ascending=True) >> mutate(deaths_all_cum_daily=cumsum(X.deaths))
+            df_cases = df_deaths >> arrange(X.dateRep, ascending=True) >> mutate(cases_cum_daily=cumsum(X.cases))
+            dict_dup_deaths_cum = compute_dict(df_cases,"deaths_all_cum_daily")
 
-            df_deaths_growth = df_cases >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_cum=growth(X.deaths_all_cum))
-            df_cases_growth = df_deaths_growth  >> arrange(X.dateRep, ascending=True) >> mutate(growth_cases_cum= growth(X.cases_cum))
+            df_deaths_growth = df_cases >> arrange(X.dateRep, ascending=True) >> mutate (growth_deaths_cum=growth(X.deaths_all_cum_daily))
+            df_cases_growth = df_deaths_growth  >> arrange(X.dateRep, ascending=True) >> mutate(growth_cases_cum= growth(X.cases_cum_daily))
 
             df_cases_growth = df_cases_growth.replace(np.inf, np.nan)
 
@@ -78,9 +78,9 @@ class Ecdc(Resource):
                 nm_growth_cases_cum=normalized_growth(X.growth_cases_cum, minnm, maxnm))
 
             df_cases_nmgrowth[["Xdatei", "XDatef", "XDelta", "XValue"]] = df_cases_nmgrowth.apply(daysBeforeMultiply, result_type="expand", dict=dict_dup_deaths_cum, df=df_cases_nmgrowth,
-                                                            deaths_all_cum=df_cases_nmgrowth['deaths_all_cum'], axis=1)
+                                                            deaths_all_cum_daily=df_cases_nmgrowth['deaths_all_cum_daily'], axis=1)
 
-            df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths_all_cum, X.cases_cum, X.growth_deaths_cum,
+            df_final = df_cases_nmgrowth >> select(X.dateRep, X.deaths_all_cum_daily, X.cases_cum_daily, X.growth_deaths_cum,
                                                    X.growth_cases_cum, X.nm_growth_deaths_cum, X.nm_growth_cases_cum, X.Xdatei, X.XDatef, X.XDelta, X.XValue)
         else:
 
