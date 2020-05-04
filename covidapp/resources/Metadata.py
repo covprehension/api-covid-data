@@ -12,17 +12,32 @@ class Metadata(Resource):
                         "label" : "Données cumulées",
                         "options":[]
                               },{
-                        "name": "daily",
-                        "label": "Données journalières",
-                        "options":[
-                            {"label":"Moyenne mobile des décés sur 3 jours",
-                             "value":"rolling_deaths"}]
-                    }]}
+                            "name": "daily",
+                            "label": "Données journalières",
+                            "options": [
+                                {"label": "Moyenne mobile des décés (Hospitaliers et Ehpad) sur n jours",
+                             "value": "rolling_deaths_daily"},
+                            {"label": "Moyenne mobile des cas sur n jours",
+                             "value": "rolling_cases_daily"}]
+                        }
+
+                    ]}
                 ,"etalab": {
                     "description": "Etalab french data consolidated",
                     "type": [{
                         "name": "cum",
                         "label": "Données cumulées",
-                        "options": []
-                }]}
+                        "options": []},{
+                        "name": "daily",
+                        "label": "Données journalières",
+                        "options":[
+                            {"label":"Moyenne mobile des décés Hospitalier sur n jours",
+                             "value":"rolling_deaths_hospital_daily"},
+                            {"label": "Moyenne mobile des décés Ehpad sur n jours",
+                             "value": "rolling_deaths_ehpad_daily"},
+                            {"label": "Moyenne mobile des cas sur n jours",
+                             "value": "rolling_cases_daily"}
+                        ]
+                    }
+                ]}
             }}
