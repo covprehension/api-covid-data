@@ -35,6 +35,8 @@ class Metadata(Resource):
                              "value":"rolling_deaths_hospital_daily"},
                             {"label": "Moyenne mobile des décés Ehpad sur n jours",
                              "value": "rolling_deaths_ehpad_daily"},
+                            {"label": "Moyenne mobile des décés totaux sur n jours",
+                             "value": "rolling_deaths_all_daily"},
                             {"label": "Moyenne mobile des cas sur n jours",
                              "value": "rolling_cases_daily"}
                         ]

@@ -13,7 +13,7 @@ class Ecdc(Resource):
         self.dayly_col_names = {
             "date": "dateRep",
             "cases": "cases_daily",
-            "deaths": "deaths_daily",
+            "deaths": "deaths_all_daily",
         }
 
         root = Path.cwd()
