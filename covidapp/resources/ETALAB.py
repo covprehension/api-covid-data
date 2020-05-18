@@ -58,7 +58,10 @@ class Etalab(Resource):
             1: 'ministere-sante',
             2: 'sante-publique-france',
             3: 'sante-publique-france-data',
-            4: 'opencovid19-fr'
+            4: 'agences-regionales-sante',
+            5: 'prefectures',
+            6: 'opencovid19-fr',
+            7: 'lperez-historical-data'
         }
 
         df_working = consolidate_data(df,SOURCE_PRIORITIES)
@@ -150,7 +153,7 @@ class Etalab(Resource):
                                                              X.rolling_deaths_ehpad_daily,
                                                              X.rolling_deaths_all_daily,
                                                              X.rolling_cases_daily)
-
+        df_final.to_csv('out_daily_etalab_rolling.csv')
         df_final_json = df_final.to_json(orient='records', date_format='iso')
 
         datajson = json.loads(df_final_json)
