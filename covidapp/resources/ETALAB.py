@@ -54,6 +54,9 @@ class Etalab(Resource):
         # FILTER maille_code = FRA
         df = pd.read_csv(r)
 
+        # Pour le dashboard ils ne gardent pas les sources :
+        # prefectures , agences-regionales-sante (car elles sont re-compilé par le ministère) et lperez-historical-data
+
         SOURCE_PRIORITIES = {
             1: 'ministere-sante',
             2: 'sante-publique-france',
@@ -153,7 +156,7 @@ class Etalab(Resource):
                                                              X.rolling_deaths_ehpad_daily,
                                                              X.rolling_deaths_all_daily,
                                                              X.rolling_cases_daily)
-        df_final.to_csv('out_daily_etalab_rolling.csv')
+        #df_final.to_csv('out_daily_etalab_rolling.csv')
         df_final_json = df_final.to_json(orient='records', date_format='iso')
 
         datajson = json.loads(df_final_json)

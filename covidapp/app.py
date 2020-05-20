@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_restful import Resource, Api, reqparse
 from covidapp.resources.errors import *
+from covidapp.resources.etalab_processing import *
 
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
@@ -32,6 +33,11 @@ parser.add_argument('rolling',type=rolling_validate(), required=False)
 app = Flask(__name__)
 api = Api(app, errors=errors)
 
+# init resources
+etalab_repo = init_etalab_repo()
+update_etalab_repo(etalab_repo)
+
+# TODO : GIT PYTHON : https://gitpython.readthedocs.io/en/stable/
 api.add_resource(Ecdc, '/covid19/ecdc', resource_class_kwargs={'dataFolder': 'ecdc', 'parser':parser} )
 api.add_resource(Etalab, '/covid19/etalab', resource_class_kwargs={'dataFolder': 'etalab', 'parser':parser})
 api.add_resource(Metadata, '/covid19/metadata')

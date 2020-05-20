@@ -1,5 +1,35 @@
 from dfply import *
 from covidapp.common.utils import *
+from git import Repo,exc
+from pathlib import Path
+
+def init_etalab_repo():
+    root = Path.cwd()
+
+    folder = Path(root / "repo" / "etalab")
+
+    cloned_repo = None
+
+    try:
+        cloned_repo = Repo.clone_from("https://github.com/opencovid19-fr/data.git", folder,branch='master')
+        cloned_repo.remote().fetch()
+    except exc.CommandError as CE:
+        print("[Warning] Command Error:{0}".format(CE))
+        try :
+            cloned_repo = Repo(folder)
+        except exc.CommandError as CE:
+            print("[Warning] Command Error:{0}".format(CE))
+
+    return cloned_repo
+
+def update_etalab_repo(repo):
+
+    try:
+        git = repo.git
+        git.pull()
+    except exc.GitError as CE:
+        print("[Warning] Command Error:{0}".format(CE))
+        pass
 
 def consolidate_data(df, priorities):
 
